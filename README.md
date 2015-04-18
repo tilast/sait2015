@@ -1,6 +1,6 @@
 # sait2015 - conference
 
-This repo is for demonstrating benefits of using cache and precomputations
+This repo is for demonstrating benefits of using cache and precomputations for web-services
 
 To run presented programs you must have Redis and MySQL installed on your computer.
 
