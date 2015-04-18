@@ -19,7 +19,7 @@ REDIS_DB = 0
 
 LIMIT = 50
 NUM_PAGES = 5
-UPDATE_ITERATION_PAUSE = 5  # in seconds
+UPDATE_ITERATION_PAUSE = 5*60  # in seconds
 
 
 QUERY_TEMPLATE = ("SELECT post.id, post.title, post.content, SUM(post_rating.rate) as total_rate "
@@ -75,29 +75,30 @@ def runScript():
 	while(True):
 		tags = getAllTags(mysqlConn)
 		for tag in tags:
+			start_time = datetime.now()
+			cursor.execute(QUERY_TEMPLATE % (tag, 0, LIMIT * NUM_PAGES));
+			all_rows = cursor.fetchall()
 			for i in range(NUM_PAGES):
 				offset = i * LIMIT
-
-				start_time = datetime.now()
-
-				cursor.execute(QUERY_TEMPLATE % (tag, offset, LIMIT));
 				redis_query_key = tag + ":" + str(offset) + ":" + str(LIMIT)
+				rows_part = all_rows[i * LIMIT: (i + 1) * LIMIT]
 
-				posts = []
-				rows = cursor.fetchall()
-				for row in rows:
+				posts = []				
+				for row in rows_part:
 					posts.append(convertRowToPost(row))
 				
 				redis.set(redis_query_key, json.dumps(posts))
+				print "Query \'" + redis_query_key + "\'" + " was updated. "
+				
+			end_time = datetime.now()
+			delta = end_time - start_time
+			output_str = "Total time elapsed for updating: \'" + tag + "\' "
+			output_str += str(delta.total_seconds()) + " seconds"
+			print output_str
 
-				end_time = datetime.now()
-				delta = end_time - start_time
-				output_str = "Query \'" + redis_query_key + "\'" + " was updated. "
-				output_str += "Time elapsed for operation: "
-				output_str += str(delta.total_seconds() * 1000) + "ms"
-				print output_str
-
+		print "Pause between updates is started"
 		time.sleep(UPDATE_ITERATION_PAUSE)
+		print "Pause between updates is finished"
 
 
 
