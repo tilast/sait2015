@@ -3,6 +3,7 @@
 
 import MySQLdb
 import json
+import random
 from datetime import datetime
 
 DB_HOST = 'localhost'
@@ -18,7 +19,14 @@ QUERY_TEMPLATE = ("SELECT post.id, post.title, post.content, SUM(post_rating.rat
 					"WHERE tag.name='%s' "
 					"GROUP BY post.id "
 					"ORDER BY total_rate "
-					"DESC LIMIT %d;")
+					"DESC LIMIT %d, %d;")
+
+GET_ALL_TAGS_QUERY = ("SELECT name FROM tag;")
+
+
+QUERIES_AMOUNT = 10
+QUERY_OFFSET = 0
+QUERY_LIMIT = 10;
 
 #row sequence: id, title, content, total_rate
 def convertRowToPost(row):
@@ -38,6 +46,16 @@ def getMySQLConnection():
 	conn = MySQLdb.connect(host = DB_HOST, user = DB_USER, passwd = DB_PASSWORD, db = DB_NAME)
 	return conn
 
+def getAllTags(conn):
+	cursor = conn.cursor()
+	cursor.execute(GET_ALL_TAGS_QUERY)
+	rows = cursor.fetchall()
+	tags = []
+	for row in rows:
+		tags.append(row[0])
+	return tags
+
+
 def printPost(post):
 	print "Post ID: " + str(post["id"])
 	print "Title: " + post["title"]
@@ -51,18 +69,38 @@ def runScript():
 	conn = getMySQLConnection();
 	cursor = conn.cursor()
 
-	start_time = datetime.now()
-	cursor.execute(QUERY_TEMPLATE % ("iasa", 50));
-	end_time = datetime.now()
-	delta = end_time - start_time
+	tags = getAllTags(conn)
 
-	rows = cursor.fetchall()
-	for row in rows:
-		post = convertRowToPost(row)
-		printPost(post)
-		print '\n-----------------\n'
+	query_durations = [0.0] * QUERIES_AMOUNT
 
-	print "time elapsed for fetching from MySQL: " + str(delta.total_seconds() * 1000) + "ms"
+	print "MySQL Fetch (Without caching)\n\n\n"
+
+	for i in range(QUERIES_AMOUNT):
+		current_tag = random.choice(tags)
+
+		start_time = datetime.now()		
+
+		cursor.execute(QUERY_TEMPLATE % (current_tag, QUERY_OFFSET, QUERY_LIMIT));
+		rows = cursor.fetchall()
+		posts = []
+		for row in rows:
+			post = convertRowToPost(row)
+			posts.append(post)
+
+		end_time = datetime.now()
+		delta = end_time - start_time
+		sec = delta.total_seconds()
+		query_durations[i] = sec
+
+		for post in posts:
+			printPost(post)
+			print '\n-----------------\n'
+
+		print ("Query #" + str(i) + " with tag \'" + current_tag + "\' finished."
+				" Duration: " + str(delta.total_seconds()) + " sec\n\n\n\n\n")
+
+
+	print "\n\nAverage query time: " + str(sum(query_durations) / float(QUERIES_AMOUNT))
 
 
 runScript()

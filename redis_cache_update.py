@@ -17,8 +17,8 @@ REDIS_PORT = 6379
 REDIS_DB = 0
 
 
-LIMIT = 50
-NUM_PAGES = 5
+LIMIT = 10
+NUM_PAGES_FOR_TAG = 5
 UPDATE_ITERATION_PAUSE = 5*60  # in seconds
 
 
@@ -42,10 +42,6 @@ def convertRowToPost(row):
 	post["content"] = row[2];
 	post["total_rate"] = row[3]
 	return post;
-
-
-def convertPostToJson(post):
-	return json.dump(post)
 
 
 def getMySQLConnection():
@@ -76,9 +72,9 @@ def runScript():
 		tags = getAllTags(mysqlConn)
 		for tag in tags:
 			start_time = datetime.now()
-			cursor.execute(QUERY_TEMPLATE % (tag, 0, LIMIT * NUM_PAGES));
+			cursor.execute(QUERY_TEMPLATE % (tag, 0, LIMIT * NUM_PAGES_FOR_TAG));
 			all_rows = cursor.fetchall()
-			for i in range(NUM_PAGES):
+			for i in range(NUM_PAGES_FOR_TAG):
 				offset = i * LIMIT
 				redis_query_key = tag + ":" + str(offset) + ":" + str(LIMIT)
 				rows_part = all_rows[i * LIMIT: (i + 1) * LIMIT]

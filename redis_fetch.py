@@ -3,6 +3,7 @@
 
 import MySQLdb
 import redis
+import random
 import simplejson as json
 from datetime import datetime
 
@@ -25,23 +26,26 @@ QUERY_TEMPLATE = ("SELECT post.id, post.title, post.content, SUM(post_rating.rat
 					"ORDER BY total_rate DESC "
 					"LIMIT %d;")
 
-#row sequence: id, title, content, total_rate
-def convertRowToPost(row):
-	post = {}
-	post["id"] = row[0];
-	post["title"] = row[1];
-	post["content"] = row[2];
-	post["total_rate"] = row[3]
-	return post;
+GET_ALL_TAGS_QUERY = ("SELECT name FROM tag;")
 
 
-def convertPostToJson(post):
-	return json.dump(post)
+QUERIES_AMOUNT = 10
+QUERY_OFFSET = 0
+QUERY_LIMIT = 10;
 
 
 def getMySQLConnection():
 	conn = MySQLdb.connect(host = DB_HOST, user = DB_USER, passwd = DB_PASSWORD, db = DB_NAME)
 	return conn
+
+def getAllTags(conn):
+	cursor = conn.cursor()
+	cursor.execute(GET_ALL_TAGS_QUERY)
+	rows = cursor.fetchall()
+	tags = []
+	for row in rows:
+		tags.append(row[0])
+	return tags
 
 def printPost(post):
 	print "Post ID: " + str(post["id"])
@@ -57,36 +61,41 @@ def getRedisConnection():
 
 
 def runScript():
-	# conn = getMySQLConnection();
-	# cursor = conn.cursor()
+	conn = getMySQLConnection();
+	cursor = conn.cursor()
+
+	tags = getAllTags(conn)
 
 	redis = getRedisConnection()
 
-	tag = "iasa"
-	limit = 50
+	print "Redis Fetch (With caching)\n\n\n"
 
-	start_time = datetime.now()
-	# cursor.execute(QUERY_TEMPLATE % (tag, limit));
-	
+	query_durations = [0.0] * QUERIES_AMOUNT
 
-	redis_query_key = tag + ":" + str(limit) 
+	for i in range(QUERIES_AMOUNT):
+		current_tag = random.choice(tags)
 
-	posts_json = redis.get(redis_query_key)
+		start_time = datetime.now()
 
-	end_time = datetime.now()
-	delta = end_time - start_time
+		redis_query_key = current_tag + ":" + str(QUERY_OFFSET) + ":" + str(QUERY_LIMIT)
+		posts_json = redis.get(redis_query_key)
+		posts = json.loads(posts_json)
 
-	posts = json.loads(posts_json)
-	# rows = cursor.fetchall()
-	for post in posts:
-		printPost(post)
-		print '\n-----------------\n'
+		end_time = datetime.now()
+		delta = end_time - start_time
+		sec = delta.total_seconds()
+		query_durations[i] = sec
 
-	# redis.set(redis_query_key, json.dumps(posts))
+		for post in posts:
+			printPost(post)
+			print '\n-----------------\n'
 
-	
+		print ("Query #" + str(i) + " with tag \'" + current_tag + "\' finished."
+				" Duration: " + str(delta.total_seconds()) + " sec\n\n\n\n\n")
 
-	print "time elapsed for fetching from redis: " + str(delta.total_seconds() * 1000) + "ms"
+
+	print "\n\nAverage query time: " + str(sum(query_durations) / float(QUERIES_AMOUNT))
+
 
 
 runScript()

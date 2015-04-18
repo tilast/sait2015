@@ -5,8 +5,8 @@ import MySQLdb
 import string
 import random
 
-N_USERS = 5000
-N_POSTS = 100000
+N_USERS = 500
+N_POSTS = 10000
 
 DB_HOST = 'localhost'
 DB_USER = 'cache_tester'
@@ -167,6 +167,7 @@ def clearTables(connection):
 def runScript():
 	conn = getConnection()
 	clearTables(conn)
+	print "clearing tables finished"
 
 	tags = generateTags()
 	users = generateUsers()

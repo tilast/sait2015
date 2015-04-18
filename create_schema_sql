@@ -1,0 +1,96 @@
+-- MySQL Workbench Forward Engineering
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL,ALLOW_INVALID_DATES';
+
+-- -----------------------------------------------------
+-- Schema sait_example
+-- -----------------------------------------------------
+DROP SCHEMA IF EXISTS `sait_example` ;
+
+-- -----------------------------------------------------
+-- Schema sait_example
+-- -----------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS `sait_example` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;
+USE `sait_example` ;
+
+-- -----------------------------------------------------
+-- Table `sait_example`.`post`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sait_example`.`post` (
+  `id` INT NOT NULL,
+  `title` VARCHAR(45) NOT NULL,
+  `content` TEXT NOT NULL,
+  PRIMARY KEY (`id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `sait_example`.`tag`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sait_example`.`tag` (
+  `id` INT NOT NULL,
+  `name` VARCHAR(45) NOT NULL,
+  PRIMARY KEY (`id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `sait_example`.`post_tag`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sait_example`.`post_tag` (
+  `post_id` INT NOT NULL,
+  `tag_id` INT NOT NULL,
+  PRIMARY KEY (`post_id`, `tag_id`),
+  INDEX `fk_post_has_tag_tag1_idx` (`tag_id` ASC),
+  INDEX `fk_post_has_tag_post_idx` (`post_id` ASC),
+  CONSTRAINT `fk_post_has_tag_post`
+    FOREIGN KEY (`post_id`)
+    REFERENCES `sait_example`.`post` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_post_has_tag_tag1`
+    FOREIGN KEY (`tag_id`)
+    REFERENCES `sait_example`.`tag` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `sait_example`.`user`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sait_example`.`user` (
+  `id` INT NOT NULL,
+  `nickname` VARCHAR(45) NOT NULL,
+  PRIMARY KEY (`id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `sait_example`.`post_rating`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sait_example`.`post_rating` (
+  `user_id` INT NOT NULL,
+  `post_id` INT NOT NULL,
+  `rate` INT NOT NULL,
+  PRIMARY KEY (`user_id`, `post_id`),
+  INDEX `fk_user_has_post_post1_idx` (`post_id` ASC),
+  INDEX `fk_user_has_post_user1_idx` (`user_id` ASC),
+  CONSTRAINT `fk_user_has_post_user1`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `sait_example`.`user` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_user_has_post_post1`
+    FOREIGN KEY (`post_id`)
+    REFERENCES `sait_example`.`post` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
