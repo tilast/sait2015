@@ -5,8 +5,8 @@ import MySQLdb
 import string
 import random
 
-N_USERS = 500
-N_POSTS = 10000
+N_USERS = 2000
+N_POSTS = 50000
 
 DB_HOST = 'localhost'
 DB_USER = 'cache_tester'
